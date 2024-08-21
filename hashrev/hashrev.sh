@@ -1,4 +1,11 @@
 #!/bin/bash
+# Landing screen
+echo "====================================="
+echo "   Hash Identifier and Cracker  "
+echo "   Developed by: Jassel"
+echo "   Version: 0.1"
+echo "====================================="
+echo ""
 
 # Define a function to identify the hash type
 identify_hash() {
