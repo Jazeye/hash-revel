@@ -10,7 +10,7 @@ echo ""
 # Define a function to identify the hash type
 identify_hash() {
   local hash=$1
-  local hash_type="unknown"
+  local hash_type="Unknown"
 
   # Check for MD5 hash
   if [[ ${hash:0:32} =~ ^[a-f0-9]{32}$ ]]; then
@@ -42,7 +42,12 @@ identify_hash() {
   # Check for Argon2 hash
   elif [[ ${hash:0:60} =~ ^\$argon2id\$[0-9]{2}\$[a-zA-Z0-9./]{53}$ ]]; then
     hash_type="Argon2"
-  # Check for other hash types (e.g. Whirlpool, Tiger, etc.)
+  # Check for SHA3-256 hash
+  elif [[ ${hash:0:64} =~ ^[a-f0-9]{64}$ ]]; then
+    hash_type="SHA3-256"
+  # Check for SHA3-512 hash
+  elif [[ ${hash:0:128} =~ ^[a-f0-9]{128}$ ]]; then
+    hash_type="SHA3-512"
   else
     # Use a tool like hash-identifier to identify the hash type
     hash_type=$(hash-identifier $hash | awk '{print $2}')
@@ -173,14 +178,20 @@ hash=$1
 complexity=$2
 
 hash_type=$(identify_hash $hash)
-wordlist=$(select_wordlist $hash_type $complexity)
-
 echo "Hash Type: $hash_type"
-echo "Recommended Wordlist: $wordlist"
+
+if [ "$hash_type" == "Unknown" ]; then
+  echo "Unknown hash type. Exiting."
+  exit 1
+fi
+
+wordlist_file=$(select_wordlist $hash_type $complexity)
 
 # Prompt the user if they want to crack the hash
 read -p "Do you want to attempt to crack the hash? (y/n): " crack_choice
 
-if [[ $crack_choice == "y" || $crack_choice == "Y" ]]; then
-  crack_hash $hash $hash_type $wordlist
+if [[ "$crack_choice" =~ ^[Yy]$ ]]; then
+  crack_hash $hash $hash_type $wordlist_file
+else
+  echo "Hash cracking skipped."
 fi
