@@ -1,31 +1,5 @@
 #!/bin/bash
 
-# Display the landing screen with usage instructions and complexity levels
-display_landing_screen() {
-  clear
-  echo "==============================="
-  echo "   Hash Cracking Tool"
-  echo "==============================="
-  echo ""
-  echo "Usage:"
-  echo "  $0 <hash> <complexity>"
-  echo ""
-  echo "Parameters:"
-  echo "  <hash>      - The hash to be cracked (e.g., MD5, SHA1, etc.)"
-  echo "  <complexity> - The complexity level of the password"
-  echo ""
-  echo "Complexity Levels:"
-  echo "  1-5  : Basic wordlists (shorter lists)"
-  echo "  6-10 : Intermediate wordlists (medium-length lists)"
-  echo "  11+  : Advanced wordlists (longer and more comprehensive lists)"
-  echo ""
-  echo "Example:"
-  echo "  $0 d41d8cd98f00b204e9800998ecf8427e 8"
-  echo ""
-  echo "==============================="
-  echo ""
-}
-
 # Define a function to identify the hash type
 identify_hash() {
   local hash=$1
@@ -174,32 +148,32 @@ crack_hash() {
   fi
 }
 
-# Show the landing screen with usage and complexity levels
-display_landing_screen
+# Display complexity levels
+echo "Complexity Levels:"
+echo "1-5: Basic wordlists (shorter lists)"
+echo "6-10: Intermediate wordlists (medium-length lists)"
+echo "11+: Advanced wordlists (longer and more comprehensive lists)"
+echo ""
 
 # Main script logic
 if [ $# -lt 2 ]; then
   echo "Usage: $0 <hash> <complexity>"
+  echo "Example: $0 d41d8cd98f00b204e9800998ecf8427e 8"
   exit 1
 fi
 
 hash=$1
 complexity=$2
 
-# Identify the hash type
 hash_type=$(identify_hash $hash)
-
-# Select the appropriate wordlist
 wordlist=$(select_wordlist $hash_type $complexity)
 
-# Prompt user to proceed with cracking
-echo "Recommended wordlist: $wordlist"
-echo ""
-read -p "Do you want to proceed with cracking this hash using the recommended wordlist? (y/n): " proceed
+echo "Hash Type: $hash_type"
+echo "Recommended Wordlist: $wordlist"
 
-if [[ $proceed =~ ^[Yy]$ ]]; then
+# Prompt the user if they want to crack the hash
+read -p "Do you want to attempt to crack the hash? (y/n): " crack_choice
+
+if [[ $crack_choice == "y" || $crack_choice == "Y" ]]; then
   crack_hash $hash $hash_type $wordlist
-else
-  echo "Exiting..."
-  exit 0
 fi
