@@ -3,6 +3,8 @@ import requests
 import time
 import sys
 import threading
+import base64
+import struct
 
 # Landing screen
 def landing_page():
@@ -49,6 +51,8 @@ def identify_hash(hash_value):
         hash_type = "Django SHA256"
     elif len(hash_value) == 128 and hash_value.startswith("sha512$"):
         hash_type = "Django SHA512"
+    elif len(hash_value) == 55 and hash_value.startswith("$S$"):
+        hash_type = "Drupal SHA512"
     
     return hash_type
 
@@ -80,6 +84,24 @@ def animate_cracking(stop_event):
         sys.stdout.write("\rCracking in progress... " + animation[idx % len(animation)])
         sys.stdout.flush()
         idx += 1
+
+# Decode a base64 string, which is used in Drupal's hashing mechanism
+def decode_base64(input_str):
+    decoded = base64.b64decode(input_str + '==')
+    return struct.unpack('<16B', decoded)
+
+# Define a function to handle Drupal SHA512 hashing
+def drupal_hash(password, hash_value):
+    count_log2 = decode_base64(hash_value[3])[0]
+    salt = hash_value[4:12]
+    count = 1 << count_log2
+
+    hash = hashlib.sha512(salt.encode() + password.encode()).digest()
+
+    for _ in range(count):
+        hash = hashlib.sha512(hash + password.encode()).digest()
+
+    return base64.b64encode(hash).decode('utf-8').replace('=', '')[:55]
 
 # Define a function to crack the hash
 def crack_hash(hash_value, hash_type, wordlist_url, stop_event):
@@ -119,6 +141,10 @@ def crack_hash(hash_value, hash_type, wordlist_url, stop_event):
                 return word
         elif hash_type == "NTLM":
             if hashlib.new('md4', word.encode('utf-16le')).hexdigest() == hash_value:
+                stop_event.set()  # Stop the animation once the hash is cracked
+                return word
+        elif hash_type == "Drupal SHA512":
+            if drupal_hash(word, hash_value) == hash_value:
                 stop_event.set()  # Stop the animation once the hash is cracked
                 return word
 
