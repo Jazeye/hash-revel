@@ -3,8 +3,6 @@ import requests
 import time
 import sys
 import threading
-import base64
-import struct
 
 # Landing screen
 def landing_page():
@@ -27,9 +25,9 @@ def identify_hash(hash_value):
         hash_type = "SHA256"
     elif len(hash_value) == 128 and all(c in '0123456789abcdef' for c in hash_value):
         hash_type = "SHA512"
-    elif len(hash_value) == 32 and all(c in '0123456789abcdef' for c in hash_value) and len(hash_value) == 64:
+    elif len(hash_value) == 32 and len(hash_value) == 64:
         hash_type = "NTLM"
-    elif len(hash_value) == 32 and all(c in '0123456789abcdef' for c in hash_value) and len(hash_value) == 96:
+    elif len(hash_value) == 32 and len(hash_value) == 96:
         hash_type = "LM"
     elif len(hash_value) == 60 and hash_value.startswith("$2"):
         hash_type = "bcrypt"
@@ -56,24 +54,46 @@ def identify_hash(hash_value):
     
     return hash_type
 
-# Define a function to select the best wordlist based on the hash type and complexity
-def select_wordlist(hash_type, complexity):
-    if hash_type in ["MD5", "SHA1", "NTLM"]:
-        if complexity <= 5:
-            wordlist_url = "https://raw.githubusercontent.com/brannondorsey/naive-hashcat/master/rockyou.txt"
-        elif complexity <= 10:
-            wordlist_url = "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Common-Credentials/10-million-password-list-top-100.txt"
-        else:
-            wordlist_url = "https://raw.githubusercontent.com/hashkiller/hashkiller.github.io/master/wordlists/100-million-passwords.txt"
-    elif hash_type in ["SHA256", "SHA512", "SHA3-256", "SHA3-512"]:
-        if complexity <= 5:
-            wordlist_url = "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Common-Credentials/10-million-password-list-top-100.txt"
-        else:
-            wordlist_url = "https://raw.githubusercontent.com/openwall/john/master/src/wordlists/password.lst"
-    else:
-        wordlist_url = "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Common-Credentials/10-million-password-list-top-100.txt"
+# Predefined fast wordlist with 100 common passwords
+default_passwords = [
+    '123456', 'password', '123456789', '12345678', '12345', '1234567', '1234567890', 'qwerty', 'abc123', 'password1',
+    '111111', '123123', 'welcome', 'admin', 'letmein', '1234', 'monkey', 'dragon', 'master', 'trustno1', 
+    '123qwe', 'qwertyuiop', 'password123', '1q2w3e4r', 'sunshine', 'princess', '123', '1234qwer', '1234567qwerty', 
+    '666666', '7777777', '1qaz2wsx', '654321', 'q1w2e3r4', 'michael', 'superman', 'pokemon', 'asdfghjkl', 'zxcvbnm', 
+    '1qazxsw2', 'qwer1234', 'abc1234', 'hello123', 'welcome123', '123456a', '6543210', 'admin123', 'secret', 
+    '1qazxsw23edc', 'abcdef', 'p@ssword', 'Password1', 'password!', '1234abcd', 'letmein1', 'Password123', 'qazwsx', 
+    'zaq12wsx', 'Qwerty123', '1q2w3e4r5t', 'asdfgh', '123qaz', 'baseball', 'football', 'shadow', '1q2w3e', 'p@ssw0rd',
+    '123abc', 'hockey', 'computer', 'maggie', 'iloveyou', '1qazxsw23edc', 'letmein123', 'passw0rd', 'qwe123', 'pa55w0rd', 
+    'pa$$word', 'Pa$$w0rd', 'pass123', 'qwerty123', 'summer', 'spring', 'winter', 'autumn', 'qwerty12', 'asdf1234', 
+    'asdfg', 'asdfjkl;', 'asdfghj', 'zxcvb', 'zxcvbn', 'zxcvbnm,', 'pass1234', 'Password!', 'Password1!', 'welcome1', 
+    'Password!23'
+]
 
-    return wordlist_url
+# Define a function to select the wordlist based on complexity level
+def select_wordlist(complexity):
+    if complexity <= 5:
+        return default_passwords
+    elif complexity <= 10:
+        # Using a reliable and working wordlist URL for intermediate complexity
+        wordlist_urls = {
+            "intermediate": "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Common-Credentials/10-million-password-list-top-100000.txt"
+        }
+        return fetch_wordlist(wordlist_urls["intermediate"])
+    else:
+        # Using a reliable and working wordlist URL for advanced complexity
+        wordlist_urls = {
+            "advanced": "https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Common-Credentials/10-million-password-list-top-1000000.txt"
+        }
+        return fetch_wordlist(wordlist_urls["advanced"])
+
+def fetch_wordlist(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.text.splitlines()
+    except requests.RequestException as e:
+        print(f"Error fetching wordlist: {e}")
+        return []
 
 # Simple animation function
 def animate_cracking(stop_event):
@@ -85,30 +105,8 @@ def animate_cracking(stop_event):
         sys.stdout.flush()
         idx += 1
 
-# Decode a base64 string, which is used in Drupal's hashing mechanism
-def decode_base64(input_str):
-    decoded = base64.b64decode(input_str + '==')
-    return struct.unpack('<16B', decoded)
-
-# Define a function to handle Drupal SHA512 hashing
-def drupal_hash(password, hash_value):
-    count_log2 = decode_base64(hash_value[3])[0]
-    salt = hash_value[4:12]
-    count = 1 << count_log2
-
-    hash = hashlib.sha512(salt.encode() + password.encode()).digest()
-
-    for _ in range(count):
-        hash = hashlib.sha512(hash + password.encode()).digest()
-
-    return base64.b64encode(hash).decode('utf-8').replace('=', '')[:55]
-
 # Define a function to crack the hash
-def crack_hash(hash_value, hash_type, wordlist_url, stop_event):
-    # Download the wordlist
-    response = requests.get(wordlist_url)
-    wordlist = response.text.splitlines()
-
+def crack_hash(hash_value, hash_type, wordlist, stop_event):
     print(f"Attempting to crack {hash_type} hash...")
 
     for word in wordlist:
@@ -143,10 +141,6 @@ def crack_hash(hash_value, hash_type, wordlist_url, stop_event):
             if hashlib.new('md4', word.encode('utf-16le')).hexdigest() == hash_value:
                 stop_event.set()  # Stop the animation once the hash is cracked
                 return word
-        elif hash_type == "Drupal SHA512":
-            if drupal_hash(word, hash_value) == hash_value:
-                stop_event.set()  # Stop the animation once the hash is cracked
-                return word
 
     stop_event.set()  # Ensure the animation stops if the hash wasn't cracked
     return None
@@ -154,7 +148,7 @@ def crack_hash(hash_value, hash_type, wordlist_url, stop_event):
 # Display complexity levels
 def display_complexity_levels():
     print("Complexity Levels:")
-    print("1-5: Basic wordlists (shorter lists)")
+    print("1-5: Basic wordlist (shorter lists)")
     print("6-10: Intermediate wordlists (medium-length lists)")
     print("11+: Advanced wordlists (longer and more comprehensive lists)")
     print("")
@@ -174,24 +168,31 @@ def main():
         print("Unknown hash type. Exiting.")
         return
 
-    wordlist_url = select_wordlist(hash_type, complexity)
+    wordlist = select_wordlist(complexity)
+    if not wordlist:
+        print("Failed to load wordlist. Exiting.")
+        return
 
-    crack_choice = input("Do you want to attempt to crack the hash? (y/n): ")
+    while True:
+        crack_prompt = input("Do you want to attempt to crack the hash? (yes/no): ").strip().lower()
+        if crack_prompt in ["yes", "y"]:
+            stop_event = threading.Event()
+            animation_thread = threading.Thread(target=animate_cracking, args=(stop_event,))
+            animation_thread.start()
 
-    if crack_choice.lower() == 'y':
-        stop_event = threading.Event()
-        animation_thread = threading.Thread(target=animate_cracking, args=(stop_event,))
-        animation_thread.start()
+            cracked_password = crack_hash(hash_value, hash_type, wordlist, stop_event)
+            animation_thread.join()  # Ensure animation stops before printing the result
 
-        cracked_password = crack_hash(hash_value, hash_type, wordlist_url, stop_event)
-        animation_thread.join()  # Ensure animation stops before printing the result
-
-        if cracked_password:
-            print(f"\nHash cracked successfully! Password: {cracked_password}")
+            if cracked_password:
+                print(f"\nSuccess! The password is: {cracked_password}")
+            else:
+                print("\nFailed to crack the hash.")
+            break
+        elif crack_prompt in ["no", "n"]:
+            print("Hash cracking aborted.")
+            break
         else:
-            print("\nFailed to crack the hash.")
-    else:
-        print("Hash cracking skipped.")
+            print("Invalid input. Please enter 'yes' or 'no'.")
 
 if __name__ == "__main__":
     main()
