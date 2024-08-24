@@ -14,12 +14,12 @@ This script is a simple hash cracking tool that identifies hash types and attemp
 To use the script, run it with the hash you want to crack and the complexity level of the password.
 
 ```bash
-python hash_cracking_tool.py
+python hashrev.py
 ```
 ## Parameters
 
-- <hash>: The hash you want to crack (e.g., MD5, SHA1, etc.)
-- <complexity>: The complexity level of the password, which determines the wordlist used.
+<hash>: The hash you want to crack (e.g., MD5, SHA1, etc.)
+<complexity>: The complexity level of the password, which determines the wordlist used.
 
 ## Complexity Levels
 - 1-5: Basic wordlists (shorter lists)
@@ -57,13 +57,13 @@ pip install -r requirements.txt
 - Ensure you have Python installed on your system. The script requires Python 3.6 or higher.
 
 ## Script Overview
-# Landing Screen
+### Landing Screen
 Displays a landing page with information about the script and complexity levels.
 
-# Identify Hash
+### Identify Hash
 Detects the hash type based on its length and pattern.
 
-# Select Wordlist
+### Select Wordlist
 Chooses an appropriate wordlist based on the complexity level:
 
 - Basic: Uses a predefined list of common passwords.
