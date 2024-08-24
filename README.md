@@ -1,73 +1,78 @@
 # Hash Cracking Tool
 
-This script is a simple hash cracking tool that identifies hash types and attempts to crack them using a recommended wordlist. It supports multiple hash types, including MD5, SHA1, SHA256, SHA512, NTLM, bcrypt, scrypt, PBKDF2, and Argon2.
+This script is a simple hash cracking tool that identifies hash types and attempts to crack them using a recommended wordlist. It supports multiple hash types, including MD5, SHA1, SHA256, SHA512, NTLM, bcrypt, scrypt, PBKDF2, Argon2, and various Django and Drupal hashes.
 
 ## Features
 
-* **Hash Identification**: Automatically detects the type of hash based on its length and pattern.
-* **Wordlist Selection**: Chooses an appropriate wordlist based on the hash type and complexity level.
-* **Hash Cracking**: Uses hashcat to attempt to crack the hash using the selected wordlist.
+- **Hash Identification**: Automatically detects the type of hash based on its length and pattern.
+- **Wordlist Selection**: Chooses an appropriate wordlist based on the hash type and complexity level.
+- **Hash Cracking**: Attempts to crack the hash using the selected wordlist.
+- **Animation**: Displays a simple animation to indicate cracking progress.
 
 ## Usage
 
 To use the script, run it with the hash you want to crack and the complexity level of the password.
 
- ```bash
-./hash_cracking_tool.sh <hash> <complexity>
- ```
- 
+```bash
+python hash_cracking_tool.py
+```
 ## Parameters
 
-* `<hash>`: The hash you want to crack (e.g., MD5, SHA1, etc.)
-* `<complexity>`: The complexity level of the password. Determines which wordlist will be used.
+- <hash>: The hash you want to crack (e.g., MD5, SHA1, etc.)
+- <complexity>: The complexity level of the password, which determines the wordlist used.
 
 ## Complexity Levels
-
-* 1-5: Basic wordlists (shorter lists)
-* 6-10: Intermediate wordlists (medium-length lists)
-* 11+: Advanced wordlists (longer and more comprehensive lists)
+- 1-5: Basic wordlists (shorter lists)
+- 6-10: Intermediate wordlists (medium-length lists)
+- 11+: Advanced wordlists (longer and more comprehensive lists)
 
 ## Example
+To crack a hash with complexity level 8, run the script and follow the prompts.
 
-To crack an MD5 hash with complexity level 8:
-
- ```bash
-./hash_cracking_tool.sh d41d8cd98f00b204e9800998ecf8427e 8
- ```
- 
 ## Dependencies
-
-* **hashcat**: This script uses hashcat for cracking hashes. Make sure it is installed and available in your PATH.
-* **curl**: Used for downloading wordlists.
+- requests: For fetching wordlists from URLs.
+- bcrypt: For verifying bcrypt hashes.
+- scrypt: For verifying scrypt hashes.
+- passlib: For verifying PBKDF2 and Argon2 hashes.
 
 ## Installation
+Clone the repository:
 
-1. Clone the repository:
-
- ```bash
+```bash
 git clone https://github.com/Jazeye/hash-revel.git
- ```
-2. Navigate to the directory:
+```
+## Navigate to the directory:
 
-  ```bash
-  cd hashrev
-  ```
-3. Make the script executable:
- ```bash
- chmod +x hashrev.sh
- ```
+```bash
+cd hash-revel
+```
 
- 4. Install Dependencies:
+## Install Python dependencies:
 
-Make sure hashcat and curl are installed on your system. You can install them using your package manager.
+Install the required Python modules using pip:
 
-**On Debian/Ubuntu:**
+```bash
+pip install -r requirements.txt
+```
+- Ensure you have Python installed on your system. The script requires Python 3.6 or higher.
 
- ```bash
-sudo apt-get install hashcat curl
- ```
- **On Red Hat/CentOS:**
+## Script Overview
+# Landing Screen
+Displays a landing page with information about the script and complexity levels.
 
-  ```bash
- sudo yum install hashcat curl
- ```
+# Identify Hash
+Detects the hash type based on its length and pattern.
+
+# Select Wordlist
+Chooses an appropriate wordlist based on the complexity level:
+
+- Basic: Uses a predefined list of common passwords.
+- Intermediate: Fetches a wordlist from a URL.
+- Advanced: Fetches a wordlist from a URL.
+
+## Crack Hash
+Attempts to crack the hash using the selected wordlist. Supports MD5, SHA1, SHA256, SHA512, SHA3-256, SHA3-512, NTLM, bcrypt, scrypt, PBKDF2, Argon2, and various Django and Drupal hashes.
+
+License
+This project is licensed under the MIT License. See the LICENSE file for details.
+
