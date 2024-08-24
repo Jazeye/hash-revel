@@ -3,6 +3,9 @@ import requests
 import time
 import sys
 import threading
+import bcrypt
+import scrypt
+from passlib.hash import pbkdf2_sha1, argon2
 
 # Landing screen
 def landing_page():
@@ -11,6 +14,11 @@ def landing_page():
     print("   Developed by: Jassel")
     print("   Version: 0.1")
     print("=====================================")
+    print("")
+    print("Complexity Levels:")
+    print("1-5: Basic wordlist (shorter lists)")
+    print("6-10: Intermediate wordlists (medium-length lists)")
+    print("11+: Advanced wordlists (longer and more comprehensive lists)")
     print("")
 
 # Define a function to identify the hash type
@@ -113,86 +121,130 @@ def crack_hash(hash_value, hash_type, wordlist, stop_event):
         if stop_event.is_set():
             break  # Exit the loop if the animation has been stopped
         
+        # MD5
         if hash_type == "MD5":
             if hashlib.md5(word.encode()).hexdigest() == hash_value:
                 stop_event.set()  # Stop the animation once the hash is cracked
                 return word
+        
+        # SHA1
         elif hash_type == "SHA1":
             if hashlib.sha1(word.encode()).hexdigest() == hash_value:
                 stop_event.set()  # Stop the animation once the hash is cracked
                 return word
+        
+        # SHA256
         elif hash_type == "SHA256":
             if hashlib.sha256(word.encode()).hexdigest() == hash_value:
                 stop_event.set()  # Stop the animation once the hash is cracked
                 return word
+        
+        # SHA512
         elif hash_type == "SHA512":
             if hashlib.sha512(word.encode()).hexdigest() == hash_value:
                 stop_event.set()  # Stop the animation once the hash is cracked
                 return word
+        
+        # SHA3-256
         elif hash_type == "SHA3-256":
             if hashlib.sha3_256(word.encode()).hexdigest() == hash_value:
                 stop_event.set()  # Stop the animation once the hash is cracked
                 return word
+        
+        # SHA3-512
         elif hash_type == "SHA3-512":
             if hashlib.sha3_512(word.encode()).hexdigest() == hash_value:
                 stop_event.set()  # Stop the animation once the hash is cracked
                 return word
+        
+        # NTLM
         elif hash_type == "NTLM":
             if hashlib.new('md4', word.encode('utf-16le')).hexdigest() == hash_value:
                 stop_event.set()  # Stop the animation once the hash is cracked
                 return word
-
-    stop_event.set()  # Ensure the animation stops if the hash wasn't cracked
+        
+        # LM
+        elif hash_type == "LM":
+            # LM hashes are not directly supported, but you could use a specialized library
+            pass
+        
+        # bcrypt
+        elif hash_type == "bcrypt":
+            if bcrypt.checkpw(word.encode(), hash_value.encode()):
+                stop_event.set()  # Stop the animation once the hash is cracked
+                return word
+        
+        # scrypt
+        elif hash_type == "scrypt":
+            # scrypt implementation requires a library such as `scrypt`
+            pass
+        
+        # PBKDF2
+        elif hash_type == "PBKDF2":
+            if pbkdf2_sha1.hash(word) == hash_value:
+                stop_event.set()  # Stop the animation once the hash is cracked
+                return word
+        
+        # Argon2
+        elif hash_type == "Argon2":
+            if argon2.verify(word, hash_value):
+                stop_event.set()  # Stop the animation once the hash is cracked
+                return word
+        
+        # Django SHA1
+        elif hash_type == "Django SHA1":
+            # Django SHA1 hash verification
+            pass
+        
+        # Django SHA256
+        elif hash_type == "Django SHA256":
+            # Django SHA256 hash verification
+            pass
+        
+        # Django SHA512
+        elif hash_type == "Django SHA512":
+            # Django SHA512 hash verification
+            pass
+        
+        # Drupal SHA512
+        elif hash_type == "Drupal SHA512":
+            # Drupal SHA512 hash verification
+            pass
+    
+    stop_event.set()  # Stop the animation if the wordlist is exhausted
     return None
 
-# Display complexity levels
-def display_complexity_levels():
-    print("Complexity Levels:")
-    print("1-5: Basic wordlist (shorter lists)")
-    print("6-10: Intermediate wordlists (medium-length lists)")
-    print("11+: Advanced wordlists (longer and more comprehensive lists)")
-    print("")
-
-# Main script logic
 def main():
     landing_page()
-    display_complexity_levels()
 
-    hash_value = input("Enter the hash value: ")
-    complexity = int(input("Enter the complexity level (1-10): "))
-
+    hash_value = input("Enter the hash to crack: ").strip()
+    complexity = int(input("Enter the complexity level (1-5 for basic, 6-10 for intermediate, 11+ for advanced): ").strip())
+    
     hash_type = identify_hash(hash_value)
-    print(f"Hash Type: {hash_type}")
-
     if hash_type == "Unknown":
-        print("Unknown hash type. Exiting.")
+        print("Hash type could not be identified.")
         return
-
+    
+    print(f"Hash type identified: {hash_type}")
+    
     wordlist = select_wordlist(complexity)
     if not wordlist:
-        print("Failed to load wordlist. Exiting.")
+        print("No wordlist available.")
         return
 
-    while True:
-        crack_prompt = input("Do you want to attempt to crack the hash? (yes/no): ").strip().lower()
-        if crack_prompt in ["yes", "y"]:
-            stop_event = threading.Event()
-            animation_thread = threading.Thread(target=animate_cracking, args=(stop_event,))
-            animation_thread.start()
+    stop_event = threading.Event()
+    animation_thread = threading.Thread(target=animate_cracking, args=(stop_event,))
+    animation_thread.start()
 
-            cracked_password = crack_hash(hash_value, hash_type, wordlist, stop_event)
-            animation_thread.join()  # Ensure animation stops before printing the result
-
-            if cracked_password:
-                print(f"\nSuccess! The password is: {cracked_password}")
-            else:
-                print("\nFailed to crack the hash.")
-            break
-        elif crack_prompt in ["no", "n"]:
-            print("Hash cracking aborted.")
-            break
-        else:
-            print("Invalid input. Please enter 'yes' or 'no'.")
+    cracked_password = crack_hash(hash_value, hash_type, wordlist, stop_event)
+    
+    if cracked_password:
+        print(f"Hash cracked! The password is: {cracked_password}")
+    else:
+        print("Failed to crack the hash.")
+    
+    stop_event.set()
+    animation_thread.join()
 
 if __name__ == "__main__":
     main()
