@@ -18,8 +18,8 @@ python hashrev.py
 ```
 ## Parameters
 
-<hash>: The hash you want to crack (e.g., MD5, SHA1, etc.)
-<complexity>: The complexity level of the password, which determines the wordlist used.
+- The hash you want to crack (e.g., MD5, SHA1, etc.)
+- The complexity level of the password, which determines the wordlist used.
 
 ## Complexity Levels
 - 1-5: Basic wordlists (shorter lists)
