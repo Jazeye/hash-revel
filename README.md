@@ -44,7 +44,7 @@ git clone https://github.com/Jazeye/hash-revel.git
 ## Navigate to the directory:
 
 ```bash
-cd hash-revel
+cd hash-revel&&hashrev
 ```
 
 ## Install Python dependencies:
